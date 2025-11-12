@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--  
+    Single-file webpage: Guinness-style live clock + countdown
+    Works on any static host (GitHub Pages/Netlify). No build tools.  
+  -->
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Countdown to Creamy Pints — Nov 14, 2025 • 12:00 PM ET</title>
+  <meta name="description" content="Live countdown to Nov 14, 2025 at 12:00 PM America/New_York with a Guinness-style analog clock. Fan page, not affiliated with Guinness." />
+  <!-- Open Graph -->
+  <meta property="og:title" content="Countdown to Creamy Pints" />
+  <meta property="og:description" content="Live countdown to Nov 14, 2025 at 12:00 PM America/New_York with a Guinness-style analog clock." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="guinness-clock.png" />
+  <meta property="og:url" content="" />
+
+  <!-- Favicon placeholder: a simple stout glass emoji as SVG data URI -->
+  <link rel="icon" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="44" height="50" x="10" y="7" rx="6" ry="6" fill="%23000"/><rect width="44" height="10" x="10" y="7" rx="6" ry="6" fill="%23fff"/></svg>' />
+
+  <!-- Fonts: prefer user-provided Guinness brand font via @font-face; otherwise Google look-alikes -->
+  <style>
+    /* If you upload a licensed Guinness font, drop the files next to this HTML and uncomment+rename below */
+    /*
+    @font-face {
+      font-family: 'GuinnessBrand';
+      src: url('GuinnessBrand.woff2') format('woff2');
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+    */
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600&family=Cormorant+Garamond:wght@600&family=EB+Garamond:wght@600&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --cream:#FBF7EF;
+      --ink:#121212;
+      --ink-2:#2b2b2b;
+      --accent:#5c4a2f; /* wood hint */
+      --gold-1:#caa94d; --gold-2:#8a6d22; --gold-3:#f4e6a2;
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --cream:#141414; --ink:#f2f2f2; --ink-2:#e7e7e7; --accent:#8f7a53; }
+    }
+
+    html,body{height:100%}
+    body{
+      margin:0; display:grid; place-items:center; min-height:100%;
+      color:var(--ink); background: var(--cream);
+      font-family: 'GuinnessBrand', 'Cormorant Garamond', 'Cinzel', 'EB Garamond', serif;
+      letter-spacing: 0.015em; /* slight tracking similar to wordmark */
+    }
+
+    /* subtle paper noise purely in CSS */
+    body::before{
+      content:""; position:fixed; inset:0; pointer-events:none; opacity:.12;
+      background:
+        radial-gradient(2px 2px at 20% 30%, rgba(0,0,0,.12), transparent 60%),
+        radial-gradient(2px 1.5px at 80% 40%, rgba(0,0,0,.08), transparent 60%),
+        radial-gradient(1.5px 2px at 50% 70%, rgba(0,0,0,.10), transparent 60%);
+      mix-blend-mode:multiply;
+    }
+
+    .wrap{ width:min(92vw, 640px); padding:22px 16px 28px; text-align:center; }
+
+    h1{ font-weight:600; font-size:clamp(1.2rem, 2.5vw + 1rem, 2rem); margin:0 0 .35rem; }
+    .subcaption{ font-size:.95rem; opacity:.8; margin-bottom:1rem; }
+
+    .clock-area{ position:relative; margin: 0 auto; width:min(88vw, 560px); aspect-ratio:1/1; }
+
+    /* Outer wood ring */
+    .bezel{ position:absolute; inset:0; border-radius:50%;
+      background: radial-gradient(circle at 30% 30%, #7a4e2b 10%, #5a3a21 40%, #3c2415 70%, #2d1a0e 100%);
+      box-shadow: inset 0 0 0 2px rgba(0,0,0,.4), 0 10px 24px rgba(0,0,0,.35);
+    }
+
+    /* Brass inner ring */
+    .brass{ position:absolute; inset:3.25%; border-radius:50%;
+      background: radial-gradient(closest-side, var(--gold-3), var(--gold-1) 40%, var(--gold-2) 70%, #5f4b17 100%);
+      box-shadow: inset 0 0 2px rgba(0,0,0,.6);
+    }
+
+    /* Face uses provided image */
+    .face{ position:absolute; inset:6.5%; border-radius:50%;
+      background: url('guinness-clock.png') center/cover no-repeat, radial-gradient(circle at 50% 40%, #fff, #f9f4e8 60%, #efe6d2 100%);
+      overflow:hidden;
+    }
+
+    /* Glass glare */
+    .glass{ position:absolute; inset:6.5%; border-radius:50%; pointer-events:none;
+      background: radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.35), rgba(255,255,255,.08) 35%, rgba(255,255,255,0) 60%),
+                  radial-gradient(ellipse at 70% 80%, rgba(255,255,255,.08), rgba(255,255,255,0) 40%);
+      mix-blend-mode:screen;
+    }
+
+    /* SVG hands layer */
+    svg.clock{ position:absolute; inset:6.5%; width:87%; height:87%; display:block; filter: drop-shadow(0 2px 1px rgba(0,0,0,.25)); }
+
+    .cap{ fill:#222; stroke:#000; stroke-width:.5; }
+    .hand{ fill:#111; }
+    .hand-outline{ stroke:#000; stroke-width:.7; fill:none; opacity:.25; }
+
+    .label-below{ margin-top: .75rem; font-size:clamp(1rem, 1.5vw + .8rem, 1.5rem); }
+
+    .sr-only{ position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+
+    .share{ margin-top:1rem; display:flex; gap:.5rem; justify-content:center; align-items:center; font-size:.95rem; }
+    .btn{ cursor:pointer; border:1px solid currentColor; background:transparent; padding:.55rem .8rem; border-radius:12px; font:inherit; color:var(--ink); }
+    .btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+
+    footer{ margin-top:1.25rem; font-size:.9rem; opacity:.8; line-height:1.4; }
+    a{ color:inherit }
+
+    /* Ensure large enough tap targets */
+    .btn, .share a{ min-height:44px; min-width:44px; }
+  </style>
+</head>
+<body>
+  <main class="wrap" aria-describedby="alt-face">
+    <h1 id="countdown" aria-live="polite">-- Hours, -- Minutes, -- Seconds</h1>
+    <div class="subcaption" id="target-caption">Target: Nov 14, 2025 • 12:00 PM (America/New_York)</div>
+
+    <div class="clock-area" role="img" aria-label="Guinness-style analog clock showing your current local time.">
+      <div class="bezel"></div>
+      <div class="brass"></div>
+      <div class="face"></div>
+      
+      <!-- Vector hands as SVG for crisp, smooth motion -->
+      <svg class="clock" viewBox="-50 -50 100 100" aria-hidden="true">
+        <!-- minute and hour ticks could be added if desired; hands only to avoid clashing with the photo -->
+        <!-- Hour hand -->
+        <g id="hour" transform="rotate(0)">
+          <path class="hand" d="M 0 5 C 1 4, 1 3, 1 0 L 1 -18 C 1 -19 0 -20 0 -20 C 0 -20 -1 -19 -1 -18 L -1 0 C -1 3 -1 4 0 5 Z"/>
+          <path class="hand-outline" d="M 0 5 C 1 4, 1 3, 1 0 L 1 -18 C 1 -19 0 -20 0 -20 C 0 -20 -1 -19 -1 -18 L -1 0 C -1 3 -1 4 0 5 Z"/>
+        </g>
+        <!-- Minute hand -->
+        <g id="minute" transform="rotate(0)">
+          <path class="hand" d="M 0 7 C 1 5.5, 1 4, 1 0 L 1 -28 C 1 -29 0 -31 0 -31 C 0 -31 -1 -29 -1 -28 L -1 0 C -1 4 -1 5.5 0 7 Z"/>
+          <path class="hand-outline" d="M 0 7 C 1 5.5, 1 4, 1 0 L 1 -28 C 1 -29 0 -31 0 -31 C 0 -31 -1 -29 -1 -28 L -1 0 C -1 4 -1 5.5 0 7 Z"/>
+        </g>
+        <!-- Second hand -->
+        <g id="second" transform="rotate(0)">
+          <path fill="#000" d="M 0 8 L 0 -34" stroke="#000" stroke-width="0.6"/>
+          <circle cx="0" cy="-34" r="1.6" fill="#000"/>
+        </g>
+        <!-- Center cap -->
+        <circle class="cap" r="3.2" />
+        <circle class="cap" r="1.2" fill="#000" />
+      </svg>
+
+      <div class="glass"></div>
+    </div>
+    <div aria-hidden="true" class="label-below" id="below-line">until creamy pints</div>
+    <div class="subcaption" id="local-now">&nbsp;</div>
+    <div id="alt-face" class="sr-only">Background image resembles a vintage Guinness wall clock face with Roman numerals and a toucan illustration.</div>
+
+    <div class="share">
+      <span>Share this page:</span>
+      <button class="btn" id="copyLinkBtn" type="button" title="Copy link">Copy link</button>
+      <span id="copyResult" aria-live="polite"></span>
+    </div>
+
+    <div id="aria-finish" class="sr-only" role="alert" aria-live="assertive"></div>
+
+    <footer>
+      <div id="local-footer">Local time: —</div>
+      <div style="margin-top:.25rem">This fan page is not affiliated with or endorsed by Guinness.</div>
+    </footer>
+  </main>
+
+  <!-- Luxon for robust IANA timezone handling (tiny, global build) -->
+  <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js" defer></script>
+
+  <script>
+  (()=>{
+    const ready = () => typeof window.luxon !== 'undefined';
+    const whenLuxonReady = (cb)=>{ if(ready()) cb(); else setTimeout(()=>whenLuxonReady(cb), 10); };
+
+    const $ = (sel)=>document.querySelector(sel);
+    const countdownEl = $('#countdown');
+    const belowLineEl = $('#below-line');
+    const targetCaption = $('#target-caption');
+    const localNowEl = $('#local-now');
+    const localFooter = $('#local-footer');
+    const alertEl = $('#aria-finish');
+
+    // Share link button
+    const copyBtn = document.getElementById('copyLinkBtn');
+    const copyResult = document.getElementById('copyResult');
+    copyBtn.addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(location.href); copyResult.textContent = 'Link copied!'; }
+      catch{ copyResult.textContent = 'Unable to copy'; }
+      setTimeout(()=> copyResult.textContent = '', 2500);
+    });
+
+    function pad2(n){ return String(Math.floor(Math.max(0,n))).padStart(2,'0'); }
+
+    whenLuxonReady(()=>{
+      const { DateTime, Duration } = luxon;
+
+      // Define target in NY time and convert to UTC millis
+      const targetNY = DateTime.fromObject({ year: 2025, month: 11, day: 14, hour: 12, minute:0, second:0 }, { zone: 'America/New_York' });
+      const targetUTCms = targetNY.toUTC().toMillis();
+
+      // Static caption (kept) — but we also show user's local now under the clock
+      const userTZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local time';
+
+      function updateLocalStrings(){
+        const now = new Date();
+        const nowStr = new Intl.DateTimeFormat(undefined, { dateStyle:'full', timeStyle:'medium' }).format(now);
+        localFooter.textContent = `Local time: ${nowStr} (${userTZ})`;
+        const justTime = new Intl.DateTimeFormat(undefined, { hour:'numeric', minute:'2-digit', second:'2-digit' }).format(now);
+        localNowEl.textContent = `It\'s ${justTime} where you are.`;
+      }
+      updateLocalStrings();
+      setInterval(updateLocalStrings, 1000);
+
+      // Countdown updater — 4fps for screen readers friendliness
+      let finished = false;
+      function updateCountdown(){
+        const diff = targetUTCms - Date.now();
+        if(diff <= 0){
+          if(!finished){
+            finished = true;
+            countdownEl.textContent = `00 Hours, 00 Minutes, 00 Seconds`;
+            belowLineEl.textContent = `It\'s creamy pint time.`;
+            alertEl.textContent = 'Countdown finished';
+            confetti();
+          }
+          return; // keep zeros
+        }
+        const dur = Duration.fromMillis(diff).shiftTo('hours','minutes','seconds');
+        const H = pad2(Math.floor(dur.hours));
+        const M = pad2(Math.floor(dur.minutes));
+        const S = pad2(Math.floor(dur.seconds));
+        countdownEl.textContent = `${H} Hours, ${M} Minutes, ${S} Seconds`;
+      }
+      updateCountdown();
+      setInterval(updateCountdown, 250);
+
+      // Smooth local analog clock using requestAnimationFrame
+      const hourHand = document.getElementById('hour');
+      const minHand  = document.getElementById('minute');
+      const secHand  = document.getElementById('second');
+
+      function animate(){
+        const now = new Date();
+        const ms = now.getMilliseconds();
+        const s  = now.getSeconds() + ms/1000;
+        const m  = now.getMinutes() + s/60;
+        const h  = (now.getHours()%12) + m/60;
+        const secAngle = s*6;             // 360/60
+        const minAngle = m*6;             // 360/60
+        const hourAngle= h*30;            // 360/12
+        secHand.setAttribute('transform', `rotate(${secAngle})`);
+        minHand.setAttribute('transform', `rotate(${minAngle})`);
+        hourHand.setAttribute('transform', `rotate(${hourAngle})`);
+        requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+
+      // Resize debounce: adjust stroke widths slightly for crispness
+      let rTO; const base = 560; // reference size
+      function tuneStrokes(){
+        const svg = document.querySelector('svg.clock');
+        if(!svg) return;
+        const rect = svg.getBoundingClientRect();
+        const scale = Math.max(0.6, Math.min(1.4, rect.width/base));
+        document.querySelectorAll('.hand-outline').forEach(el=> el.setAttribute('stroke-width', (0.7/scale).toFixed(2)) );
+      }
+      tuneStrokes();
+      window.addEventListener('resize', ()=>{ clearTimeout(rTO); rTO = setTimeout(tuneStrokes, 120); }, { passive:true });
+
+      // Tiny confetti burst (optional)
+      function confetti(){
+        const canvas = document.createElement('canvas');
+        Object.assign(canvas.style, { position:'fixed', inset:0, width:'100vw', height:'100vh', pointerEvents:'none' });
+        const ctx = canvas.getContext('2d');
+        document.body.appendChild(canvas);
+        const W = canvas.width = innerWidth * devicePixelRatio;
+        const H = canvas.height = innerHeight * devicePixelRatio;
+        const N = 80; const pieces = [];
+        for(let i=0;i<N;i++) pieces.push({
+          x: Math.random()*W, y: -Math.random()*H*0.2, r: 3+Math.random()*5,
+          vx: (-1+Math.random()*2)*1.2, vy: 2+Math.random()*2.5,
+          a: Math.random()*Math.PI*2, spin: (-1+Math.random()*2)*0.2
+        });
+        let t=0, maxT=120;
+        (function tick(){
+          ctx.clearRect(0,0,W,H);
+          for(const p of pieces){
+            p.x += p.vx; p.y += p.vy; p.vy += 0.03; p.a += p.spin;
+            ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.a);
+            ctx.fillStyle = `hsl(${(p.x/W*360)|0},80%,60%)`;
+            ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2);
+            ctx.restore();
+          }
+          if(t++ < maxT) requestAnimationFrame(tick); else canvas.remove();
+        })();
+      }
+    });
+  })();
+  </script>
+</body>
+</html>
